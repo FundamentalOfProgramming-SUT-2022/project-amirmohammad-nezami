@@ -4,6 +4,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <string.h>
+// #include "windows.h"
+// #include "string.h"
+// #include <direct.h>
 
 #define maxn 10000
 
@@ -112,7 +115,7 @@ int add(char path[] , char string[] , char line[]) {
 }
 
 int rem(char path[] , char line[] , int sz , char type[]) {
-    printf("HELLLLL\n");
+    // printf("HELLLLL\n");
     int SZ = strlen(path) , k = 0; 
     char dir[maxn] = {};
     for (int i = 1; i < SZ; ++i) {
@@ -136,7 +139,7 @@ int rem(char path[] , char line[] , int sz , char type[]) {
     fp = fopen(dir , "w");
     int L = line[0] - '0' , P = line[2] - '0' , cntline = 0;
     int l_bad , r_bad;
-    printf("%d %d\n" , L , P);
+    // printf("%d %d\n" , L , P);
     for (int i = 0; i < cnt; ++i) {
         if(value[i] == '\n') cntline++;
         if(cntline == L - 1) {
@@ -150,7 +153,7 @@ int rem(char path[] , char line[] , int sz , char type[]) {
             break;
         }
     }
-    printf("%d %d    %d\n" , l_bad , r_bad , cnt);
+    // printf("%d %d    %d\n" , l_bad , r_bad , cnt);
     // l_bad = max(l_bad , 0);
     // r_bad = min(r_bad , SZ);
 
@@ -188,6 +191,67 @@ void remove_string() {
     if(!rem(path , line , sz , op4)) {
         printf("ERROR! file mojood nist!\n");
     }
+}
+
+int get_string(char res[] , char dir[] , int L , int P , int sz , char type[]) {
+    FILE *fp;
+    fp = fopen(dir , "r");
+    if(!sz) return ;
+
+    int cnt = 0;
+    char value[maxn] = {};
+
+    char x = fgetc(fp);
+    while(x != EOF) {
+        value[cnt++] = x;
+        x = fgetc(fp);
+    }
+
+    int cntline = 0 , l , r;
+    for (int i = 0; i < cnt; ++i) {
+        if(value[i] == '\n') cntline++;
+        if(cntline == L - 1) {
+            int id = i + P + (cntline != 0);
+            if(type[1] == 'f') {
+                l = id , r = id + sz;
+            }
+            else {
+                r = id + 1 , l = id - sz + 1;
+            }
+            break;
+        }
+    }
+
+    int counter = 0;
+    for (int i = l; i < r && i < cnt; ++i) {
+        res[i - l] = value[i]; counter++;
+    }
+    return counter;
+}
+
+void copy() {
+    int L , P , sz;
+    char op1[maxn] , path[maxn] , op2[maxn] , pos[maxn] , op3[maxn] , op4[maxn] , res[maxn];
+    scanf("%s%s%s%d%s%d%s%d%s" , op1 , path , op2 , &L , pos , &P , op3 , &sz , op4);
+    int SZ = strlen(path) , k = 0; 
+    char dir[maxn] = {};
+    for (int i = 1; i < SZ; ++i) {
+        dir[k++] = path[i];
+    }
+    FILE *fp;
+    fp = fopen(dir , "r");
+    if(fp == NULL) {
+        printf("ERROR! file mojood nist!\n");
+        return;
+    } 
+    int cnt = get_string(res , dir , L , P , sz , op4) + 1;
+    // HGLOBAL hMem =  GlobalAlloc(GMEM_MOVEABLE, cnt);
+    // memcpy(GlobalLock(hMem), res, cnt);
+    // GlobalUnlock(hMem);
+    // OpenClipboard(0);
+    // EmptyClipboard();
+    // SetClipboardData(CF_TEXT, hMem);
+    // CloseClipboard();
 }
 
 int cat() {
@@ -233,4 +297,5 @@ int main() {
         }
         scanf("%s" , command);
     }
+    
 }
