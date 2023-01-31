@@ -43,29 +43,54 @@ void make_dir(char path[]) {
         dir[k++] = '/';
     }
 }
-
-int add(char path[] , char string[] , char line[]) {
-    // check exitense
-    int sz = strlen(path) , k = 0; 
-    char dir[maxn] = {};
-    for (int i = 1; i < sz; ++i) {
+ 
+int file_to_string(char value[] , char dir[] , char path[]) {
+    int SZ = strlen(path) , k = 0; 
+    for (int i = 1; i < SZ; ++i) {
         dir[k++] = path[i];
     }
     FILE *fp;
     fp = fopen(dir , "r");
-    if(fp == NULL) return 0;
+    if(fp == NULL) return -1;
 
-    // add
     int cnt = 0;
-    char value[maxn] = {};
-
     char x = fgetc(fp);
     while(x != EOF) {
         value[cnt++] = x;
         x = fgetc(fp);
     }
+    return cnt;
+}
 
-    fp = fopen(dir , "w");
+int scan_string(char string[]) {
+    char x , value[maxn] = {}; 
+    scanf("%c" , &x);
+    if(x != 34) {
+        scanf("%s" , value);
+        string[0] = x;
+        for (int i = 0; i < strlen(value); ++i) {
+            string[i + 1] = value[i];
+        }
+        return strlen(value) + 1;
+    }
+    else {
+        int cnt = 0;
+        char bef = x , curr;
+        scanf("%c" , &curr);
+        while(curr != 34 || bef == 92) {
+            string[cnt++] = bef = curr;
+            scanf("%c" , &curr);
+        }
+        return cnt;
+    }
+}
+
+int add(char path[] , char string[] , char line[]) {
+    char value[maxn] = {} , dir[maxn] = {};
+    int cnt = file_to_string(value , dir , path);
+    if(cnt == -1) return 0;
+
+    FILE *fp = fopen(dir , "w");
     int L = line[0] - '0' , P = line[2] - '0' , cntline = 0 , SZ = strlen(string);
     if(cnt == 0) {
         for (int j = 0; j < SZ; ++j) {
@@ -115,28 +140,12 @@ int add(char path[] , char string[] , char line[]) {
 }
 
 int rem(char path[] , char line[] , int sz , char type[]) {
-    // printf("HELLLLL\n");
-    int SZ = strlen(path) , k = 0; 
-    char dir[maxn] = {};
-    for (int i = 1; i < SZ; ++i) {
-        dir[k++] = path[i];
-    }
-    FILE *fp;
-    fp = fopen(dir , "r");
-    if(fp == NULL) return 0;
+    char value[maxn] = {} , dir[maxn] = {};
+    int cnt = file_to_string(value , dir , path);
+    if(cnt == -1) return 0;
 
     if(!sz) return 1;
 
-    int cnt = 0;
-    char value[maxn] = {};
-
-    char x = fgetc(fp);
-    while(x != EOF) {
-        value[cnt++] = x;
-        x = fgetc(fp);
-    }
-
-    fp = fopen(dir , "w");
     int L = line[0] - '0' , P = line[2] - '0' , cntline = 0;
     int l_bad , r_bad;
     // printf("%d %d\n" , L , P);
@@ -156,13 +165,73 @@ int rem(char path[] , char line[] , int sz , char type[]) {
     // printf("%d %d    %d\n" , l_bad , r_bad , cnt);
     // l_bad = max(l_bad , 0);
     // r_bad = min(r_bad , SZ);
-
+    FILE *fp = fopen(dir , "w");
     for (int i = 0; i < cnt; ++i) {
         if(l_bad <= i && i < r_bad) continue;
         else fprintf(fp , "%c" , value[i]);
     }
     fclose(fp);
     return 1;
+}
+
+int wild_card(int *sz , char string[]) {
+    if(string[0] == '*') return 0;
+    if(string[*sz - 1] == '*' && string[*sz - 2] != 92) return 1;
+    int SZ = *sz;
+    for (int i = 0; i < *sz; ++i) {
+        if(string[i] == '*') {
+            for (int j = i; j < *sz; ++j) {
+                string[j - 1] = string[j];
+            }
+            SZ--;
+        }
+    }
+    *sz = SZ;
+    return 2;
+}
+
+int find(int sz , char string[] , char path[]) {
+    char value[maxn] = {} , dir[maxn] = {};
+    int cnt = file_to_string(value , dir , path);
+    if(cnt == -1) return -1;
+
+    int type = wild_card(&sz , string);
+    if(type == 0) {
+        for (int i = 0; i < cnt; ++i) {
+            int is = 1;
+            for (int j = 1; j < sz; ++j) {
+                is &= (i + j <= cnt && string[j] == value[i + j - 1]);
+            }
+            if(is && i && value[i - 1] != ' ' && value[i - 1] != '\n') {
+                return i;
+            }
+        }
+        return -2;
+    }
+    else if(type == 1) {
+        for (int i = 0; i < cnt; ++i) {
+            int is = 1;
+            for (int j = 0; j < sz - 1; ++j) {
+                is &= (i + j < cnt && string[j] == value[i + j]);
+            }
+            if(is && i + sz - 1 < cnt && value[i + sz - 1] != ' ' && value[i + sz - 1] != '\n') {
+                return i;
+            }
+        }
+        return -2;
+    }
+    else {
+        for (int i = 0; i < cnt; ++i) {
+            int is = 1;
+            for (int j = 0; j < sz; ++j) {
+                is &= (i + j < cnt && string[j] == value[i + j]);
+            }
+            if(is) {
+                return i;
+            }
+        }
+        return -2;
+    }
 }
 
 void create_file() {
@@ -193,19 +262,22 @@ void remove_string() {
     }
 }
 
-int get_string(char res[] , char dir[] , int L , int P , int sz , char type[]) {
-    FILE *fp;
-    fp = fopen(dir , "r");
-    if(!sz) return ;
+void find_string() {
+    char op1[maxn] , string[maxn] , op2[maxn] , path[maxn];
+    scanf("%s" , op1);
+    int sz = scan_string(string);
+    scanf("%s%s" , op2 , path);
+    int res = find(sz , string , path);
+    if(res == -1) printf("File mojood nist!\n");
+    else if(res == -2) printf("String mojood nist\n");
+    else printf("%d\n" , res);
+}
 
-    int cnt = 0;
-    char value[maxn] = {};
-
-    char x = fgetc(fp);
-    while(x != EOF) {
-        value[cnt++] = x;
-        x = fgetc(fp);
-    }
+int get_string(char res[] , char path[] , int L , int P , int sz , char type[]) {
+    char value[maxn] = {} , dir[maxn] = {};
+    int cnt = file_to_string(value , dir , path);
+    if(cnt == -1) return -1;
+    if(!sz) return 0;
 
     int cntline = 0 , l , r;
     for (int i = 0; i < cnt; ++i) {
@@ -229,49 +301,41 @@ int get_string(char res[] , char dir[] , int L , int P , int sz , char type[]) {
     return counter;
 }
 
-void copy() {
-    int L , P , sz;
-    char op1[maxn] , path[maxn] , op2[maxn] , pos[maxn] , op3[maxn] , op4[maxn] , res[maxn];
-    scanf("%s%s%s%d%s%d%s%d%s" , op1 , path , op2 , &L , pos , &P , op3 , &sz , op4);
-    int SZ = strlen(path) , k = 0; 
-    char dir[maxn] = {};
-    for (int i = 1; i < SZ; ++i) {
-        dir[k++] = path[i];
-    }
-    FILE *fp;
-    fp = fopen(dir , "r");
-    if(fp == NULL) {
-        printf("ERROR! file mojood nist!\n");
-        return;
-    } 
-    int cnt = get_string(res , dir , L , P , sz , op4) + 1;
-    // HGLOBAL hMem =  GlobalAlloc(GMEM_MOVEABLE, cnt);
-    // memcpy(GlobalLock(hMem), res, cnt);
-    // GlobalUnlock(hMem);
-    // OpenClipboard(0);
-    // EmptyClipboard();
-    // SetClipboardData(CF_TEXT, hMem);
-    // CloseClipboard();
-}
+// void copy() {
+//     int L , P , sz;
+//     char op1[maxn] , path[maxn] , op2[maxn] , pos[maxn] , op3[maxn] , op4[maxn] , res[maxn];
+//     scanf("%s%s%s%d%s%d%s%d%s" , op1 , path , op2 , &L , pos , &P , op3 , &sz , op4);
+//     int SZ = strlen(path) , k = 0; 
+//     char dir[maxn] = {};
+//     for (int i = 1; i < SZ; ++i) {
+//         dir[k++] = path[i];
+//     }
+//     FILE *fp;
+//     fp = fopen(dir , "r");
+//     if(fp == NULL) {
+//         printf("ERROR! file mojood nist!\n");
+//         return;
+//     } 
+//     int cnt = get_string(res , dir , L , P , sz , op4) + 1;
+//     // const char* output = "Test";
+//     // const size_t len = strlen(output) + 1;
+//     // HGLOBAL hMem =  GlobalAlloc(GMEM_MOVEABLE, len);
+//     // memcpy(GlobalLock(hMem), output, len);
+//     // GlobalUnlock(hMem);
+//     // OpenClipboard(0);
+//     // EmptyClipboard();
+//     // SetClipboardData(CF_TEXT, hMem);
+//     // CloseClipboard();
+// }
 
 int cat() {
     char path[maxn];
     scanf("%s" , path);
-    int sz = strlen(path) , k = 0, cnt = 0; 
     char dir[maxn] = {} , value[maxn] = {};
-    for (int i = 1; i < sz; ++i) {
-        dir[k++] = path[i];
-    }
-    FILE *fp;
-    fp = fopen(dir , "r");
-    if(fp == NULL) return 0;
+    int cnt = file_to_string(value , dir , path);
 
-    char x = fgetc(fp);
-    while(x != EOF) {
-        value[cnt++] = x;
-        x = fgetc(fp);
-    }
-
+    if(cnt == -1) return 0;
+    
     for(int i = 0; i < cnt; ++i) {
         printf("%c" , value[i]);
     }
@@ -294,6 +358,9 @@ int main() {
         }
         else if(strcmp(command , "removestr") == 0) {
             remove_string();
+        }
+        else if(strcmp(command , "find") == 0) {
+            find_string();
         }
         scanf("%s" , command);
     }
