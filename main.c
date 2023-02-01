@@ -190,47 +190,73 @@ int wild_card(int *sz , char string[]) {
     return 2;
 }
 
-int find(int sz , char string[] , char path[]) {
+int find(int sz , char string[] , char path[] , int res[][]) {
     char value[maxn] = {} , dir[maxn] = {};
-    int cnt = file_to_string(value , dir , path);
-    if(cnt == -1) return -1;
+    int cnt = file_to_string(value , dir , path) , n = -1;
+    if(cnt == -1) return -1; //no file
 
-    int type = wild_card(&sz , string);
+    int type = wild_card(&sz , string) , SZ = 0 , word_cnt = 0;
     if(type == 0) {
         for (int i = 0; i < cnt; ++i) {
             int is = 1;
+            if((!i && value[i] != ' ') || (value[i] != ' ' && value[i - 1] == ' ')) {
+                word_cnt++;
+            }
             for (int j = 1; j < sz; ++j) {
                 is &= (i + j <= cnt && string[j] == value[i + j - 1]);
             }
             if(is && i && value[i - 1] != ' ' && value[i - 1] != '\n') {
-                return i;
+                res[0][SZ] = i;
+                res[1][SZ++] = word_cnt;
             }
         }
-        return -2;
     }
     else if(type == 1) {
         for (int i = 0; i < cnt; ++i) {
             int is = 1;
+            if((!i && value[i] != ' ') || (value[i] != ' ' && value[i - 1] == ' ')) {
+                word_cnt++;
+            }
             for (int j = 0; j < sz - 1; ++j) {
                 is &= (i + j < cnt && string[j] == value[i + j]);
             }
             if(is && i + sz - 1 < cnt && value[i + sz - 1] != ' ' && value[i + sz - 1] != '\n') {
-                return i;
+                res[0][SZ] = i;
+                res[1][SZ++] = word_cnt;
             }
         }
-        return -2;
     }
     else {
         for (int i = 0; i < cnt; ++i) {
             int is = 1;
+            if((!i && value[i] != ' ') || (value[i] != ' ' && value[i - 1] == ' ')) {
+                word_cnt++;
+            }
             for (int j = 0; j < sz; ++j) {
                 is &= (i + j < cnt && string[j] == value[i + j]);
             }
             if(is) {
-                return i;
+                res[0][SZ] = i;
+                res[1][SZ++] = word_cnt;
             }
         }
-        return -2;
+    }
+    return SZ;
+}
+
+void change(char path[] , int id , int sz , char string[]) {
+    char value[maxn] = {} , dir[maxn] = {};
+    int cnt = file_to_string(value , dir , path);
+
+    FILE *fp = fopen(dir , "w");
+    for (int i = 0; i < id; ++i) {
+        fprintf(fp , "%c" , value[i]);
+    }
+    for (int i = 0; i < strlen(string); ++i) {
+        fprintf(fp , "%c" , string[i]);
+    }
+    for (int i = id + sz; i < cnt; ++i) {
+        fprintf(fp , "%c" , value[i]);
     }
 }
 
@@ -263,14 +289,53 @@ void remove_string() {
 }
 
 void find_string() {
-    char op1[maxn] , string[maxn] , op2[maxn] , path[maxn];
+    char op1[maxn] , string[maxn] , op2[maxn] , path[maxn] , op3[maxn];
     scanf("%s" , op1);
-    int sz = scan_string(string);
-    scanf("%s%s" , op2 , path);
-    int res = find(sz , string , path);
-    if(res == -1) printf("File mojood nist!\n");
-    else if(res == -2) printf("String mojood nist\n");
-    else printf("%d\n" , res);
+    int sz = scan_string(string) , n;
+    scanf("%s%s%s" , op2 , path, op3);
+    if(strcmp(op3 , "-at") == 0) scanf("%d" , &n);
+
+    int res[2][maxn] = {};
+    int SZ = find(sz , string , path , res);
+    if(SZ == -1) printf("File mojood nist!\n");
+    else if(SZ == 0) printf("String mojood nist\n");
+    else {
+        if(strcmp(op3 , "-at") == 0) {
+            if(n > SZ) printf("-1\n");
+            else printf("%d\n" , res[0][n - 1]);
+        }
+        else if(strcmp(op3 , "-count") == 0) {
+            printf("%d\n" , SZ);
+        }
+        else if(strcmp(op3 , "-byword") == 0) {
+            printf("%d\n" , res[1][n - 1]);
+        }
+        else if(strcmp(op3 , "-all") == 0) {
+            for (int i = 0; i < SZ; ++i) printf("%d " , res[0][i]);
+            printf("\n");
+        }
+        else {
+            printf("%d\n" , res[0][0]);
+        }
+    }
+}
+
+void replace() {
+    char op1[maxn] , st1[maxn] , op2[maxn] , st2[maxn] , op3[maxn] , path[maxn] , op4[maxn];
+    scanf("%s" , op1);
+    int sz = scan_string(st1) , n = 1;
+    scanf("%s%s%s%s%s" , op2 , st2 , op3 , path , op4);
+    if(strcmp(op4 , "-at") == 0) scanf("%d" , &n);
+
+    int res[2][maxn] = {};
+    int SZ = find(sz , st1 , path , res);
+    if(SZ == -1) printf("File mojood nist!\n");
+    else if(SZ == 0) printf("String mojood nist\n");
+
+    int t = (strcmp(op4 , "-all") == 0 ? SZ : n);
+    for (int i = t - 1; i >= 0; --i) {
+        change(res[0][i] , sz , st2);
+    }
 }
 
 int get_string(char res[] , char path[] , int L , int P , int sz , char type[]) {
