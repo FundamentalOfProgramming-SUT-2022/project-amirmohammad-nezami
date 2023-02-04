@@ -10,13 +10,48 @@
 
 #define maxn 10000
 
-struct stat st = {0};
-
-char command[maxn];
+int count , sz_c[1000];
+char command[maxn] , Com[1000][1000];
 
 void Error() {
     printf("Invalid command\n");
     exit(0);
+}
+
+int to_int(char s[]) {
+    int sz = strlen(s) , p = 1 , res = 0;
+    for (int i = sz - 1; i >= 0; --i) {
+        int dig = s[i] - '0';
+        res += dig * p;
+        p *= 10;
+    }
+    return res;
+}
+
+int fix_commands() {
+    int id = 0 , t = 0 , sz = strlen(command);
+    for (int i = 0; i < 1000; ++i) sz_c[i] = 0;
+    while(id < sz) {
+        if(command[id] == ' ' || command[id] == '\n') {
+            id++;
+            continue;
+        }
+
+        int j = id;
+        if(command[id] == 34) {
+            while(j < sz && (command[j] != 34 || command[j - 1] == 92)) {
+                if(command[j] == 34) sz_c[t]--;
+                Com[t][sz_c[t]++] = command[j++];
+            }
+        }
+        else {
+            while(j < sz && command[j] != ' ' && command[j] != '\n') {
+                Com[t][sz_c[t]++] = command[j++];
+            }
+        }
+        id = j , t++;
+    }
+    return t;
 }
 
 void make_dir(char path[]) {
@@ -62,28 +97,33 @@ int file_to_string(char value[] , char dir[] , char path[]) {
     return cnt;
 }
 
-int scan_string(char string[]) {
-    char x , value[maxn] = {}; 
-    scanf("%c" , &x);
-    if(x != 34) {
-        scanf("%s" , value);
-        string[0] = x;
-        for (int i = 0; i < strlen(value); ++i) {
-            string[i + 1] = value[i];
-        }
-        return strlen(value) + 1;
-    }
-    else {
-        int cnt = 0;
-        char bef = x , curr;
-        scanf("%c" , &curr);
-        while(curr != 34 || bef == 92) {
-            string[cnt++] = bef = curr;
-            scanf("%c" , &curr);
-        }
-        return cnt;
-    }
-}
+// int scan_string(char string[]) {
+//     char x , value[maxn] = {}; 
+//     scanf("%c" , &x);
+//     scanf("%c" , &x);
+//     if(x != 34) {
+//         scanf("%s" , value);
+//         string[0] = x;
+//         for (int i = 0; i < strlen(value); ++i) {
+//             string[i + 1] = value[i];
+//         }
+//         // for (int i = 0; i < strlen(value) + 1; ++i) {
+//         //     printf("%c" , string[i]);
+//         // }
+//         // printf("\n");
+//         return strlen(value) + 1;
+//     }
+//     else {
+//         int cnt = 0;
+//         char bef = x , curr;
+//         scanf("%c" , &curr);
+//         while(curr != 34 || bef == 92) {
+//             string[cnt++] = bef = curr;
+//             scanf("%c" , &curr);
+//         }
+//         return cnt;
+//     }
+// }
 
 int add(char path[] , char string[] , char line[]) {
     char value[maxn] = {} , dir[maxn] = {};
@@ -190,7 +230,7 @@ int wild_card(int *sz , char string[]) {
     return 2;
 }
 
-int find(int sz , char string[] , char path[] , int res[][]) {
+int find(int sz , char string[] , char path[] , int *res) {
     char value[maxn] = {} , dir[maxn] = {};
     int cnt = file_to_string(value , dir , path) , n = -1;
     if(cnt == -1) return -1; //no file
@@ -206,8 +246,9 @@ int find(int sz , char string[] , char path[] , int res[][]) {
                 is &= (i + j <= cnt && string[j] == value[i + j - 1]);
             }
             if(is && i && value[i - 1] != ' ' && value[i - 1] != '\n') {
-                res[0][SZ] = i;
-                res[1][SZ++] = word_cnt;
+                *(res + SZ) = i;
+                *(res + maxn + SZ) = word_cnt;
+                SZ++;
             }
         }
     }
@@ -221,8 +262,9 @@ int find(int sz , char string[] , char path[] , int res[][]) {
                 is &= (i + j < cnt && string[j] == value[i + j]);
             }
             if(is && i + sz - 1 < cnt && value[i + sz - 1] != ' ' && value[i + sz - 1] != '\n') {
-                res[0][SZ] = i;
-                res[1][SZ++] = word_cnt;
+                *(res + SZ) = i;
+                *(res + maxn + SZ) = word_cnt;
+                SZ++;
             }
         }
     }
@@ -236,8 +278,9 @@ int find(int sz , char string[] , char path[] , int res[][]) {
                 is &= (i + j < cnt && string[j] == value[i + j]);
             }
             if(is) {
-                res[0][SZ] = i;
-                res[1][SZ++] = word_cnt;
+                *(res + SZ) = i;
+                *(res + maxn + SZ) = word_cnt;
+                SZ++;
             }
         }
     }
@@ -261,110 +304,120 @@ void change(char path[] , int id , int sz , char string[]) {
 }
 
 void create_file() {
-    char option[maxn], path[maxn];
-    scanf("%s" , option);
-    if(strcmp(option , "-file") == 0) {
-        scanf("%s" , path);
-        make_dir(path);
+    if(strcmp(Com[1] , "-file") == 0) {
+        make_dir(Com[2]);
     }
     else Error();
 }
 
 void insert_string() {
-    char op1[maxn] , path[maxn] , op2[maxn] , string[maxn] , op3[maxn] , line[maxn];
-    scanf("%s%s%s%s%s%s" , op1 , path , op2 , string , op3 , line);
-    if(!add(path , string , line)) {
+    if(!add(Com[2] , Com[4] , Com[6])) {
         printf("ERROR! file mojood nist!\n");
         return ;
     }
 }
 
 void remove_string() {
-    int sz;
-    char op1[maxn] , path[maxn] , op2[maxn] , line[maxn] , op3[maxn] , op4[maxn];
-    scanf("%s%s%s%s%s%d%s" , op1 , path , op2 , line , op3 , &sz , op4);
-    if(!rem(path , line , sz , op4)) {
+    int sz = to_int(Com[6]);
+    if(!rem(Com[2] , Com[4] , sz , Com[7])) {
         printf("ERROR! file mojood nist!\n");
     }
 }
 
 void find_string() {
-    char op1[maxn] , string[maxn] , op2[maxn] , path[maxn] , op3[maxn];
-    scanf("%s" , op1);
-    int sz = scan_string(string) , n;
-    scanf("%s%s%s" , op2 , path, op3);
-    if(strcmp(op3 , "-at") == 0) scanf("%d" , &n);
+    int n = 0 , all = 0 , by_w = 0 , c = 0;
+    for (int i = 0; i < count; ++i) {
+        if(strcmp(Com[i] , "-at") == 0) n = to_int(Com[i + 1]);
+        if(strcmp(Com[i] , "-all") == 0) all = 1;
+        if(strcmp(Com[i] , "-by_word") == 0) by_w = 1;
+        if(strcmp(Com[i] , "-count") == 0) c = 1;
+    }
+
+    if(n != 0 && all != 0) Error(); return;
 
     int res[2][maxn] = {};
-    int SZ = find(sz , string , path , res);
+    int SZ = find(sz_c[2] , Com[2] , Com[4] , (int *)res);
     if(SZ == -1) printf("File mojood nist!\n");
     else if(SZ == 0) printf("String mojood nist\n");
     else {
-        if(strcmp(op3 , "-at") == 0) {
+        if(c != 0) {
+            printf("-count resault: %d\n" , SZ);
+        }
+        if(n != 0) {
             if(n > SZ) printf("-1\n");
-            else printf("%d\n" , res[0][n - 1]);
-        }
-        else if(strcmp(op3 , "-count") == 0) {
-            printf("%d\n" , SZ);
-        }
-        else if(strcmp(op3 , "-byword") == 0) {
-            printf("%d\n" , res[1][n - 1]);
-        }
-        else if(strcmp(op3 , "-all") == 0) {
-            for (int i = 0; i < SZ; ++i) printf("%d " , res[0][i]);
-            printf("\n");
+            else {
+                printf("%d\n" , res[by_w][n - 1]);
+            }
         }
         else {
-            printf("%d\n" , res[0][0]);
+            if(all != 0) {
+                for (int i = 0; i < SZ; ++i) printf("%d " , res[by_w][i]);
+            }
+            else {
+                printf("%d\n" , res[by_w][0]);
+            }
         }
     }
 }
 
 void replace() {
-    char op1[maxn] , st1[maxn] , op2[maxn] , st2[maxn] , op3[maxn] , path[maxn] , op4[maxn];
-    scanf("%s" , op1);
-    int sz = scan_string(st1) , n = 1;
-    scanf("%s%s%s%s%s" , op2 , st2 , op3 , path , op4);
-    if(strcmp(op4 , "-at") == 0) scanf("%d" , &n);
+    int n = 0 , all = 0;
+    for (int i = 0; i < count; ++i) {
+        if(strcmp(Com[i] , "-at") == 0) n = to_int(Com[i + 1]);
+    }
 
     int res[2][maxn] = {};
-    int SZ = find(sz , st1 , path , res);
+    int SZ = find(sz_c[2] , Com[2] , Com[6] , (int *)res);
     if(SZ == -1) printf("File mojood nist!\n");
     else if(SZ == 0) printf("String mojood nist\n");
 
-    int t = (strcmp(op4 , "-all") == 0 ? SZ : n);
+    int t = (n == 0 ? (all == 0 ? 1 : all) : n);
     for (int i = t - 1; i >= 0; --i) {
-        change(res[0][i] , sz , st2);
+        change(Com[6] , res[0][i] , sz_c[2] , Com[4]);
     }
 }
 
-int get_string(char res[] , char path[] , int L , int P , int sz , char type[]) {
-    char value[maxn] = {} , dir[maxn] = {};
-    int cnt = file_to_string(value , dir , path);
-    if(cnt == -1) return -1;
-    if(!sz) return 0;
+void grep() {
+    int op_c = 0 , op_l = 0 , st_id , file_id;
+    if(strcmp(Com[1] , "c") == 0) op_c = 1;
+    if(strcmp(Com[1] , "l") == 0) op_l = 1;
+    for (int i = 0; i < count; ++i) if(strcmp(Com[i] , "-str") == 0) st_id = i + 1;
+    for (int i = 0; i < count; ++i) if(strcmp(Com[i] , "-file") == 0) file_id = i + 1;
 
-    int cntline = 0 , l , r;
-    for (int i = 0; i < cnt; ++i) {
-        if(value[i] == '\n') cntline++;
-        if(cntline == L - 1) {
-            int id = i + P + (cntline != 0);
-            if(type[1] == 'f') {
-                l = id , r = id + sz;
-            }
-            else {
-                r = id + 1 , l = id - sz + 1;
-            }
-            break;
-        }
+    
+    for (int i = file_id; i < count; ++i) {
+        int res[2][maxn] = {};
+        int SZ = find(sz_c[st_id] , Com[st_id] , Com[i] , (int *)res);
+        int l = 
     }
-
-    int counter = 0;
-    for (int i = l; i < r && i < cnt; ++i) {
-        res[i - l] = value[i]; counter++;
-    }
-    return counter;
 }
+
+// int get_string(char res[] , char path[] , int L , int P , int sz , char type[]) {
+//     char value[maxn] = {} , dir[maxn] = {};
+//     int cnt = file_to_string(value , dir , path);
+//     if(cnt == -1) return -1;
+//     if(!sz) return 0;
+//     int cntline = 0 , l , r;
+//     for (int i = 0; i < cnt; ++i) {
+//         if(value[i] == '\n') cntline++;
+//         if(cntline == L - 1) {
+//             int id = i + P + (cntline != 0);
+//             if(type[1] == 'f') {
+//                 l = id , r = id + sz;
+//             }
+//             else {
+//                 r = id + 1 , l = id - sz + 1;
+//             }
+//             break;
+//         }
+//     }
+
+//     int counter = 0;
+//     for (int i = l; i < r && i < cnt; ++i) {
+//         res[i - l] = value[i]; counter++;
+//     }
+//     return counter;
+// }
 
 // void copy() {
 //     int L , P , sz;
@@ -394,10 +447,8 @@ int get_string(char res[] , char path[] , int L , int P , int sz , char type[]) 
 // }
 
 int cat() {
-    char path[maxn];
-    scanf("%s" , path);
     char dir[maxn] = {} , value[maxn] = {};
-    int cnt = file_to_string(value , dir , path);
+    int cnt = file_to_string(value , dir , Com[2]);
 
     if(cnt == -1) return 0;
     
@@ -410,24 +461,32 @@ int cat() {
 
 int main() {
     mkdir("root" , 0700);
-    scanf("%s" , command);
-    while(strcmp(command , "exit") != 0) {
-        if(strcmp(command , "createfile") == 0) {
+
+    fgets(command , maxn , stdin);
+    count = fix_commands();
+
+    while(strcmp(Com[0] , "exit") != 0) {
+        if(strcmp(Com[0] , "createfile") == 0) {
             create_file();
         }
-        else if(strcmp(command , "insertstr") == 0) {
+        else if(strcmp(Com[0] , "insertstr") == 0) {
             insert_string();
         }
-        else if(strcmp(command , "cat") == 0) {
+        else if(strcmp(Com[0] , "cat") == 0) {
             if(!cat()) printf("File mojood nist!\n");
         }
-        else if(strcmp(command , "removestr") == 0) {
+        else if(strcmp(Com[0] , "removestr") == 0) {
             remove_string();
         }
-        else if(strcmp(command , "find") == 0) {
+        else if(strcmp(Com[0] , "find") == 0) {
             find_string();
         }
-        scanf("%s" , command);
+        else if(strcmp(Com[0] , "replace") == 0) {
+            replace();
+        }
+
+        fgets(command , maxn , stdin);
+        count = fix_commands();
     }
     
 }
