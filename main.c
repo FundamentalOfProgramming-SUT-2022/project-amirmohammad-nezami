@@ -301,8 +301,9 @@ int find(int sz , char string[] , char path[] , int *res) {
 void change(char path[] , int id , int sz , char string[]) {
     char value[maxn] = {} , dir[maxn] = {};
     int cnt = file_to_string(value , dir , path);
-
-    FILE *fp = fopen(dir , "w");
+    // printf("%s \n %d %d %d" , string , cnt , id , sz);
+    FILE *fp;
+    fp = fopen(dir , "w");
     for (int i = 0; i < id; ++i) {
         fprintf(fp , "%c" , value[i]);
     }
@@ -312,6 +313,7 @@ void change(char path[] , int id , int sz , char string[]) {
     for (int i = id + sz; i < cnt; ++i) {
         fprintf(fp , "%c" , value[i]);
     }
+    fclose(fp);
 }
 
 void create_file() {
@@ -379,13 +381,16 @@ void replace() {
 
     int res[2][maxn] = {};
     int SZ = find(sz_c[2] , Com[2] , Com[6] , (int *)res);
-    if(SZ == -1) printf("File mojood nist!\n");
-    else if(SZ == 0) printf("String mojood nist\n");
+    if(SZ == -1) {printf("File mojood nist!\n"); return; }
+    else if(SZ == 0) {printf("String mojood nist\n"); return; }
 
     int t = (n == 0 ? (all == 0 ? 1 : all) : n);
+    // printf("%d \n" , t);
     for (int i = t - 1; i >= 0; --i) {
+        // printf("%d h\n" , res[0][i]);
         change(Com[6] , res[0][i] , sz_c[2] , Com[4]);
     }
+    printf("Success\n");
 }
 
 void grep() {
